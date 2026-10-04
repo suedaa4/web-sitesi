@@ -1,70 +1,48 @@
-const mobileMenu = document.getElementById("mobile-menu");
-const navLinks = document.querySelector(".navLinks");
-const navItems = document.querySelectorAll(".navLinks a");
+document.addEventListener("DOMContentLoaded", () => {
+  // Mobil menü veya diğer arayüz elementleri için temel seçiciler
+  const contactForm = document.getElementById("contact-form");
 
-const contactForm = document.getElementById("contactForm");
-const sendEmailBtn = document.getElementById("sendEmailBtn");
-const formStatus = document.getElementById("formStatus");
+  // İletişim Formu Gönderim İşlemi
+  if (contactForm) {
+    contactForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-// Mobil menü açma/kapama
-mobileMenu.addEventListener("click", function () {
-  navLinks.classList.toggle("active");
-});
+      // Form içindeki inputların ID'lerine göre verileri alıyoruz
+      const nameInput = document.getElementById("name");
+      const emailInput = document.getElementById("email");
+      const messageInput = document.getElementById("message");
 
-navItems.forEach(function (link) {
-  link.addEventListener("click", function () {
-    navLinks.classList.remove("active");
-  });
-});
+      const formData = {
+        name: nameInput ? nameInput.value : "",
+        email: emailInput ? emailInput.value : "",
+        message: messageInput ? messageInput.value : "",
+      };
 
-function resetSendButton() {
-  setTimeout(function () {
-    sendEmailBtn.textContent = "Send Message";
-    sendEmailBtn.disabled = false;
-    formStatus.textContent = "";
-  }, 3000);
-}
+      try {
+        // Render canlı backend adresimize istek atıyoruz
+        const response = await fetch(
+          "https://web-sitesi-slxl.onrender.com/api/send-email",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          },
+        );
 
-// İletişim Formu Gönderimi (Backend Sunucusuna Fetch İsteği)
-contactForm.addEventListener("submit", async function (event) {
-  event.preventDefault();
+        const result = await response.json();
 
-  sendEmailBtn.textContent = "Sending...";
-  sendEmailBtn.disabled = true;
-  formStatus.textContent = "";
-
-  const formData = {
-    name: document.getElementById("userName").value,
-    email: document.getElementById("userEmail").value,
-    message: document.getElementById("userMessage").value,
-  };
-
-  try {
-    const response = await fetch("http://localhost:3000/api/send-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
+        if (response.ok) {
+          alert("Mesajınız başarıyla gönderildi!");
+          contactForm.reset(); // Formu temizle
+        } else {
+          alert("Gönderilemedi: " + (result.error || "Lütfen tekrar deneyin."));
+        }
+      } catch (error) {
+        console.error("Bağlantı hatası:", error);
+        alert("Sunucuya bağlanırken bir hata oluştu.");
+      }
     });
-
-    const result = await response.json();
-
-    if (result.success) {
-      sendEmailBtn.textContent = "Message Sent!";
-      formStatus.textContent = "Your message has been sent successfully.";
-      contactForm.reset();
-    } else {
-      sendEmailBtn.textContent = "Failed to Send";
-      formStatus.textContent =
-        "Your message could not be sent. Please try again.";
-    }
-  } catch (error) {
-    console.error("Connection error:", error);
-    sendEmailBtn.textContent = "Failed to Send";
-    formStatus.textContent =
-      "Server connection error. Please make sure the server is running.";
-  } finally {
-    resetSendButton();
   }
 });
